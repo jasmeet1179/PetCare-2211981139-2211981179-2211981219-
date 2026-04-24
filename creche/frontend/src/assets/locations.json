@@ -1,0 +1,45 @@
+[
+    {
+        "name": "Gurugram",
+        "latitude": 28.4595,
+        "longitude": 77.0266,
+        "pincode": "122001"
+    },
+    {
+        "name": "Faridabad",
+        "latitude": 28.4089,
+        "longitude": 77.3178,
+        "pincode": "121001"
+    },
+    {
+        "name": "Panipat",
+        "latitude": 29.3909,
+        "longitude": 76.9635,
+        "pincode": "132103"
+    },
+    {
+        "name": "Ambala",
+        "latitude": 30.3782,
+        "longitude": 76.7767,
+        "pincode": "134003"
+    },
+    {
+        "name": "Karnal",
+        "latitude": 29.6857,
+        "longitude": 76.9905,
+        "pincode": "132001"
+    },
+  
+    {
+        "name": "Rohtak",
+        "latitude": 28.8955,
+        "longitude": 76.6066,
+        "pincode": "124001"
+    },
+    {
+        "name": "Yamunanagar",
+        "latitude": 30.1290,
+        "longitude": 77.2674,
+        "pincode": "135001"
+    }
+]

@@ -1,0 +1,37 @@
+{
+  "john": {
+    "userName": "john",
+    "email": "john@example.com",
+    "bookingHistory": [],
+    "currentBooking": [],
+    "profilePicture": null,
+    "phoneNumber": "7696848807",
+    "password": "$2b$10$aVxct3FsDTAGngq1sZ207.2xYiwyoRcjLVFqYv2jccS05BdDnGq3a",
+    "crecheOwner": false,
+    "id": "f0e449a6-fb36-4f43-b3b1-86cf21f3205d",
+    "location": null
+  },
+  "john123": {
+    "userName": "john123",
+    "email": null,
+    "bookingHistory": [],
+    "currentBooking": [],
+    "profilePicture": null,
+    "phoneNumber": null,
+    "password": "$2b$10$RpG2bcGlIDXrYopAJ5w.SexximHWfOYnYpfVwBmanqbCXWuZd0YmW",
+    "crecheOwner": false,
+    "id": "95c869a4-ab35-4956-b264-0681f67895c6",
+    "location": null
+  },
+  "john12345": {
+    "userName": "john12345",
+    "email": null,
+    "bookingHistory": [],
+    "currentBooking": [],
+    "profilePicture": null,
+    "phoneNumber": null,
+    "password": "$2b$10$cslBpx2IzAjaB7DgOgJUZesJBite.Ns5ZgLbJHazKkUeO.8JwuX/u",
+    "crecheOwner": true,
+    "id": "638fc2f4-964b-461d-a70d-4af052e79b25"
+  }
+}

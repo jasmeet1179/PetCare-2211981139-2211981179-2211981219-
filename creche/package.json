@@ -1,0 +1,17 @@
+{
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "autoprefixer": "^10.4.20",
+    "jsdom": "^26.1.0",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^4.0.4",
+    "vitest": "^3.1.2"
+  },
+  "dependencies": {
+    "git": "^0.1.5",
+    "react-redux": "^9.2.0",
+    "redux": "^5.0.1",
+    "uuid": "^11.1.0"
+  }
+}
