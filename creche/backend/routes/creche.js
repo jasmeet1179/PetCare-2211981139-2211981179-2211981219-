@@ -1,129 +1,72 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-
-// Use absolute path so it always finds the file regardless of where node is run from
-const LOCATION_FILE = path.join(__dirname, '..', 'locationinfo.json');
+const Creche = require('../models/Creche');
 
 // ─── GET /searchlocation/:location ────────────────────────────────
-router.get('/searchlocation/:location', (req, res) => {
-    const l = req.params.location;
-
-    fs.readFile(LOCATION_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
-
-        let locations = {};
-        try { locations = JSON.parse(data); } catch { return res.status(500).send('Database file corrupted'); }
-        const result = locations[l];
-        if (result) {
-            res.send(result);
-        } else {
-            res.status(404).send('Location not found');
+router.get('/searchlocation/:location', async (req, res) => {
+    try {
+        const creches = await Creche.find({ location: req.params.location });
+        if (!creches || creches.length === 0) {
+            return res.status(404).send('No creches found in this location');
         }
-    });
+        res.send(creches);
+    } catch (err) {
+        console.error('Search error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // ─── GET /biggercard ──────────────────────────────────────────────
-router.get('/biggercard', (req, res) => {
+router.get('/biggercard', async (req, res) => {
     const { id, location } = req.query;
-
-    fs.readFile(LOCATION_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
-
-        let locations = {};
-        try { locations = JSON.parse(data); } catch { return res.status(500).send('Database file corrupted'); }
-        const result = locations[location];
-        const ans = result && result.find(e => e.crecheid == id);
-
-        if (ans) {
-            res.send(ans);
-        } else {
-            res.status(404).send('Creche not found');
-        }
-    });
+    try {
+        const creche = await Creche.findOne({ crecheid: id, location: location });
+        if (!creche) return res.status(404).send('Creche not found');
+        res.send(creche);
+    } catch (err) {
+        console.error('Biggercard error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // ─── POST /registercreche ─────────────────────────────────────────
-router.post('/registercreche', (req, res) => {
-    const crecheInfo = req.body.data;
+router.post('/registercreche', async (req, res) => {
+    const crecheData = req.body.data;
     const editing = req.body.editing;
 
-    // Validate required fields
-    if (!crecheInfo) {
-        return res.status(400).send('No creche data received');
-    }
-    if (!crecheInfo.location || crecheInfo.location === '') {
-        return res.status(400).send('Location is required');
-    }
-    if (!crecheInfo.name) {
-        return res.status(400).send('Creche name is required');
-    }
-
-    fs.readFile(LOCATION_FILE, 'utf8', (err, data) => {
-        if (err) {
-            console.error('Error reading locationinfo.json:', err);
-            return res.status(500).send('Could not read database file: ' + err.message);
-        }
-
-        let locations = {};
-        try {
-            locations = JSON.parse(data);
-        } catch (parseErr) {
-            console.error('Error parsing locationinfo.json:', parseErr);
-            return res.status(500).send('Database file is corrupted');
-        }
-
-        // Make sure location key exists as an array
-        if (!locations[crecheInfo.location]) {
-            locations[crecheInfo.location] = [];
-        }
-
+    try {
         if (editing === true) {
-            const index = locations[crecheInfo.location].findIndex(
-                e => e.id == crecheInfo.id || e.crecheid == crecheInfo.crecheid
+            // Update existing creche
+            await Creche.findOneAndUpdate(
+                { userid: crecheData.userid },
+                crecheData,
+                { new: true }
             );
-            if (index !== -1) {
-                locations[crecheInfo.location][index] = crecheInfo;
-            } else {
-                crecheInfo.crecheid = uuidv4();
-                locations[crecheInfo.location].push(crecheInfo);
-            }
+            res.send("ok");
         } else {
-            crecheInfo.crecheid = uuidv4();
-            locations[crecheInfo.location].push(crecheInfo);
+            // Create new creche with unique ID
+            const { v4: uuidv4 } = require('uuid');
+            crecheData.crecheid = uuidv4();
+            await Creche.create(crecheData);
+            res.send("ok");
         }
-
-        fs.writeFile(LOCATION_FILE, JSON.stringify(locations, null, 2), (err) => {
-            if (err) {
-                console.error('Error writing locationinfo.json:', err);
-                return res.status(500).send('Could not save to database: ' + err.message);
-            }
-            res.send('ok');
-        });
-    });
+    } catch (err) {
+        console.error('Register creche error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // ─── GET /registercreche ──────────────────────────────────────────
-router.get('/registercreche', (req, res) => {
+router.get('/registercreche', async (req, res) => {
     const { location, id } = req.query;
-
-    fs.readFile(LOCATION_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
-
-        let locations = {};
-        try { locations = JSON.parse(data); } catch { return res.status(500).send('Database file corrupted'); }
-        const locationData = locations[location];
-        if (!locationData) return res.status(404).send('Location not found');
-
-        const result = locationData.find(item => item.userid == id);
-        if (result) {
-            res.send(result);
-        } else {
-            res.status(404).send('Creche not found');
-        }
-    });
+    try {
+        const creche = await Creche.findOne({ userid: id, location: location });
+        if (!creche) return res.status(404).send('Creche not found');
+        res.send(creche);
+    } catch (err) {
+        console.error('Get registercreche error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 module.exports = router;

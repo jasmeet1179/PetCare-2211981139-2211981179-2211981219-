@@ -190,5 +190,46 @@
       "crecheid": "ac02696e-32be-4467-83a0-717df66e406f",
       "username": "john12345"
     }
+  ],
+  "Faridabad": [
+    {
+      "name": "John Doe",
+      "displayimg": "https://res.cloudinary.com/djp1oiwpe/image/upload/v1777113902/qmlw4yqir15qwmha7btb.jpg",
+      "certificate": [
+        "https://res.cloudinary.com/djp1oiwpe/image/upload/v1777113903/a8btveo2sgqoe1iitqjz.webp"
+      ],
+      "location": "Faridabad",
+      "shortdescription": "no",
+      "price": 3500,
+      "rating": 0,
+      "ownername": "John Doe",
+      "allimg": [
+        "https://res.cloudinary.com/djp1oiwpe/image/upload/v1777113902/k7rbfxybtuiiee17pcfo.jpg"
+      ],
+      "fulldescription": "",
+      "skills": [
+        "Dog Walking"
+      ],
+      "summary": "",
+      "noofpetswatched": "2",
+      "petsize": [
+        {
+          "src": "icon_03.png",
+          "weight": "10-20kg"
+        }
+      ],
+      "pottybreaks": "2",
+      "typeOfHome": "house",
+      "Emergencytransport": "",
+      "petTypeAccepted": [
+        "Dog"
+      ],
+      "bookings": [],
+      "phoneNumber": "07973951757",
+      "email": "john@example.com",
+      "userid": "95c869a4-ab35-4956-b264-0681f67895c6",
+      "crecheid": "12ed4e34-9caf-4ab4-9b44-fb85725d5a91",
+      "username": "john123"
+    }
   ]
 }

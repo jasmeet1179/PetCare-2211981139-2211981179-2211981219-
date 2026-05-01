@@ -13,8 +13,13 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     try {
         const b64 = Buffer.from(req.file.buffer).toString('base64');
         const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-        const result = await cloudinary.v2.uploader.upload(dataURI, { resource_type: 'auto' });
-        return res.status(201).json({ url: result.secure_url, public_id: result.public_id });
+        const result = await cloudinary.v2.uploader.upload(dataURI, {
+            resource_type: 'auto'
+        });
+        return res.status(201).json({
+            url: result.secure_url,
+            public_id: result.public_id
+        });
     } catch (error) {
         console.error('Cloudinary upload error:', error);
         return res.status(500).json({ error: error.message });

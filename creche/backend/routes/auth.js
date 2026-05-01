@@ -1,61 +1,51 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
-
-const USERS_FILE = path.join(__dirname, '..', 'users.json');
+const User = require('../models/User');
 
 const SALT_ROUNDS = 10;
-const OWNER_SECRET_KEY = "PETCARE@OWNER2024";
-const JWT_SECRET = "petcare_jwt_secret_2024"; // keep this private
+const OWNER_SECRET_KEY = process.env.OWNER_SECRET_KEY || "PETCARE@OWNER2024";
+const JWT_SECRET = process.env.JWT_SECRET || "petcare_jwt_secret_2024";
 
 // ─── Helper: generate token ────────────────────────────────────────
 const generateToken = (user) => {
     return jwt.sign(
         {
-            id: user.id,
+            id: user._id,
             userName: user.userName,
             crecheOwner: user.crecheOwner,
         },
         JWT_SECRET,
-        { expiresIn: '7d' } // token valid for 7 days
+        { expiresIn: '7d' }
     );
 };
 
 // ─── POST /login ───────────────────────────────────────────────────
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
     const { username, currentPassword } = req.body;
 
-    fs.readFile(USERS_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
-
-        let users = {};
-        try { users = JSON.parse(data || '{}'); } catch { users = {}; }
-        const user = users[username];
+    try {
+        const user = await User.findOne({ userName: username });
         if (!user) return res.send({ status: "wrong credentials" });
 
-        bcrypt.compare(currentPassword, user.password, (err, isMatch) => {
-            if (err) return res.status(500).send('Internal Server Error');
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return res.send({ status: "wrong credentials" });
 
-            if (isMatch) {
-                const token = generateToken(user);
-                if (user.crecheOwner) {
-                    res.send({ status: "crecheowner loggedin", data: user, token });
-                } else {
-                    res.send({ status: "loggedin", data: user, token });
-                }
-            } else {
-                res.send({ status: "wrong credentials" });
-            }
-        });
-    });
+        const token = generateToken(user);
+        if (user.crecheOwner) {
+            res.send({ status: "crecheowner loggedin", data: user, token });
+        } else {
+            res.send({ status: "loggedin", data: user, token });
+        }
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // ─── POST /signin ──────────────────────────────────────────────────
-router.post('/signin', (req, res) => {
+router.post('/signin', async (req, res) => {
     const { username, currentPassword, role, phoneNumber, email, location, ownerSecretKey } = req.body;
 
     // Validate owner secret key
@@ -63,47 +53,34 @@ router.post('/signin', (req, res) => {
         return res.send({ status: "invalid owner key" });
     }
 
-    fs.readFile(USERS_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
-
-        const uid = uuidv4();
-        let users = {};
-        try { users = JSON.parse(data || '{}'); } catch { users = {}; }
-        const user = users[username];
-
-        if (user) {
-            // Username already taken — always block signup, show error
+    try {
+        // Check if username already taken
+        const existingUser = await User.findOne({ userName: username });
+        if (existingUser) {
             return res.send({ status: "username taken" });
-        } else {
-            // New user — hash password and save
-            bcrypt.hash(currentPassword, SALT_ROUNDS, (err, hashedPassword) => {
-                if (err) return res.status(500).send('Internal Server Error');
-
-                const newUser = {
-                    userName: username,
-                    email: email || null,
-                    bookingHistory: [],
-                    currentBooking: [],
-                    profilePicture: null,
-                    phoneNumber: phoneNumber || null,
-                    password: hashedPassword,
-                    crecheOwner: role === "crecheowner",
-                    id: uid,
-                    location: role === "crecheowner" ? location : null,
-                };
-                users[username] = newUser;
-
-                fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), (err) => {
-                    if (err) return res.status(500).send('Internal Server Error');
-                    const token = generateToken(newUser);
-                    res.send({ status: "signedin", data: newUser, id: uid, token });
-                });
-            });
         }
-    });
+
+        // Hash password and create new user
+        const hashedPassword = await bcrypt.hash(currentPassword, SALT_ROUNDS);
+        const newUser = await User.create({
+            userName: username,
+            email: email || null,
+            phoneNumber: phoneNumber || null,
+            password: hashedPassword,
+            crecheOwner: role === "crecheowner",
+            location: role === "crecheowner" ? location : null,
+        });
+
+        const token = generateToken(newUser);
+        res.send({ status: "signedin", data: newUser, token });
+
+    } catch (err) {
+        console.error('Signin error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
-// ─── POST /verifytoken — check if token is still valid ─────────────
+// ─── POST /verifytoken ─────────────────────────────────────────────
 router.post('/verifytoken', (req, res) => {
     const { token } = req.body;
     if (!token) return res.send({ valid: false });
@@ -117,4 +94,3 @@ router.post('/verifytoken', (req, res) => {
 });
 
 module.exports = router;
-module.exports.JWT_SECRET = JWT_SECRET;

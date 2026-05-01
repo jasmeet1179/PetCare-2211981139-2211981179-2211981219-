@@ -33,5 +33,17 @@
     "password": "$2b$10$cslBpx2IzAjaB7DgOgJUZesJBite.Ns5ZgLbJHazKkUeO.8JwuX/u",
     "crecheOwner": true,
     "id": "638fc2f4-964b-461d-a70d-4af052e79b25"
+  },
+  "testuser": {
+    "userName": "testuser",
+    "email": null,
+    "bookingHistory": [],
+    "currentBooking": [],
+    "profilePicture": null,
+    "phoneNumber": null,
+    "password": "$2b$10$Y1c4ATqBkumHxd.pemZWgeU3WuE0GQiW6x1dF4KjubJ3Ni3EVNdiy",
+    "crecheOwner": false,
+    "id": "ab1bd137-7391-4e70-8012-f90c5528ff08",
+    "location": null
   }
 }

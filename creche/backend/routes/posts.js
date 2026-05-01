@@ -1,40 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const Post = require('../models/Post');
 const verifyToken = require('../middleware/verifyToken');
 
-const POSTS_FILE = path.join(__dirname, '..', 'posts.json');
-
 // ─── GET /posts (public) ──────────────────────────────────────────
-router.get('/posts', (req, res) => {
-    fs.readFile(POSTS_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
-        let posts = [];
-        try { posts = JSON.parse(data || '[]'); } catch { return res.status(500).send('Database file corrupted'); }
-        res.send(posts.slice().reverse());
-    });
+router.get('/posts', async (req, res) => {
+    try {
+        // Sort by newest first
+        const posts = await Post.find().sort({ createdAt: -1 });
+        res.send(posts);
+    } catch (err) {
+        console.error('Get posts error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // ─── POST /posts (protected) ──────────────────────────────────────
-router.post('/posts', verifyToken, (req, res) => {
+router.post('/posts', verifyToken, async (req, res) => {
     const { title, description, location, healthStatus, category, imageUrl, postedBy } = req.body;
-    if (!title || !postedBy) return res.status(400).send('Title and postedBy are required');
 
-    fs.readFile(POSTS_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
+    if (!title || !postedBy) {
+        return res.status(400).send('Title and postedBy are required');
+    }
 
-        let posts = [];
-        try { posts = JSON.parse(data || '[]'); } catch { return res.status(500).send('Database file corrupted'); }
-        // Generate unique ID — never reuse existing ones
-        let newId = uuidv4();
-        while (posts.find(p => p.id === newId)) {
-            newId = uuidv4();
-        }
-
-        const newPost = {
-            id: newId,
+    try {
+        const newPost = await Post.create({
             title,
             description: description || '',
             location: location || '',
@@ -42,45 +32,40 @@ router.post('/posts', verifyToken, (req, res) => {
             category: category || 'stray',
             imageUrl: imageUrl || '',
             postedBy,
-            createdAt: new Date().toISOString(),
-            comments: [],
-        };
-        posts.push(newPost);
-
-        fs.writeFile(POSTS_FILE, JSON.stringify(posts, null, 2), (err) => {
-            if (err) return res.status(500).send('Internal Server Error');
-            res.status(201).send(newPost);
         });
-    });
+
+        res.status(201).send(newPost);
+
+    } catch (err) {
+        console.error('Create post error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // ─── POST /posts/:id/comment (protected) ─────────────────────────
-router.post('/posts/:id/comment', verifyToken, (req, res) => {
-    const { id } = req.params;
+router.post('/posts/:id/comment', verifyToken, async (req, res) => {
     const { commentText, postedBy } = req.body;
-    if (!commentText || !postedBy) return res.status(400).send('commentText and postedBy are required');
 
-    fs.readFile(POSTS_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
+    if (!commentText || !postedBy) {
+        return res.status(400).send('commentText and postedBy are required');
+    }
 
-        let posts = [];
-        try { posts = JSON.parse(data || '[]'); } catch { return res.status(500).send('Database file corrupted'); }
-        const post = posts.find(p => p.id === id);
+    try {
+        const post = await Post.findById(req.params.id);
         if (!post) return res.status(404).send('Post not found');
 
-        const comment = {
-            id: uuidv4(),
-            commentText,
-            postedBy,
-            createdAt: new Date().toISOString(),
-        };
-        post.comments.push(comment);
+        // Push comment into post
+        post.comments.push({ commentText, postedBy });
+        await post.save();
 
-        fs.writeFile(POSTS_FILE, JSON.stringify(posts, null, 2), (err) => {
-            if (err) return res.status(500).send('Internal Server Error');
-            res.status(201).send(comment);
-        });
-    });
+        // Send back the newly added comment
+        const newComment = post.comments[post.comments.length - 1];
+        res.status(201).send(newComment);
+
+    } catch (err) {
+        console.error('Add comment error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 module.exports = router;

@@ -53,5 +53,24 @@
     "postedBy": "john12345",
     "createdAt": "2026-04-24T04:06:55.943Z",
     "comments": []
+  },
+  {
+    "id": "6f7678a3-e4f0-4405-9075-0b80494b1da7",
+    "title": "A injured dog near sector 20 market panipat",
+    "description": "I found a dog near sector 20 market i have done with the medications if any one want to adopt it plz contact +919988773644",
+    "location": "Panipat ",
+    "healthStatus": "Injured",
+    "category": "adoption",
+    "imageUrl": "https://res.cloudinary.com/djp1oiwpe/image/upload/v1777114936/ykqseikuehr0svycc1oy.avif",
+    "postedBy": "john123",
+    "createdAt": "2026-04-25T11:02:18.735Z",
+    "comments": [
+      {
+        "id": "fbc50511-8417-4172-abf2-3cd22a31f82a",
+        "commentText": "Hello pls contact on my number - 84739478322",
+        "postedBy": "john123",
+        "createdAt": "2026-04-26T10:31:26.727Z"
+      }
+    ]
   }
 ]

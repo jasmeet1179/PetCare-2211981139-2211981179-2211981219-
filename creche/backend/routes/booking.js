@@ -1,94 +1,79 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
+const User = require('../models/User');
+const Creche = require('../models/Creche');
 const verifyToken = require('../middleware/verifyToken');
 
-const LOCATION_FILE = path.join(__dirname, '..', 'locationinfo.json');
-const USERS_FILE = path.join(__dirname, '..', 'users.json');
-
 // ─── POST /booking (protected) ────────────────────────────────────
-router.post('/booking', verifyToken, (req, res) => {
+router.post('/booking', verifyToken, async (req, res) => {
     const crecheInfo = req.body.crecheInfo;
     const bookingDetails = req.body.bookingDetails;
     const userInfo = req.body.userInfo.User;
 
-    const l = crecheInfo.location;
     const now = new Date();
     const time = now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds();
     const date = now.getDate() + "/" + (now.getMonth() + 1) + "/" + now.getFullYear();
 
-    fs.readFile(LOCATION_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
-
-        let Data = JSON.parse(data || '{}');
-        const creche = Data[l] && Data[l].find(item => item.crecheid == crecheInfo.id || item.id == crecheInfo.id);
-
+    try {
+        // Step 1: Find the creche
+        const creche = await Creche.findOne({
+            crecheid: crecheInfo.id,
+            location: crecheInfo.location
+        });
         if (!creche) return res.status(404).send('Creche not found');
 
-        if (!creche.bookings) creche.bookings = [];
+        // Step 2: Push booking into creche
         creche.bookings.push(bookingDetails);
+        await creche.save();
 
-        const crecheName = creche.name || '';
-        const crecheprice = creche.price || 0;
+        // Step 3: Find the user
+        const user = await User.findOne({ userName: userInfo.userName });
+        if (!user) return res.status(404).send('User not found');
 
-        fs.writeFile(LOCATION_FILE, JSON.stringify(Data, null, 2), (err) => {
-            if (err) return res.status(500).send('Internal Server Error');
+        // Step 4: Push booking into user history
+        const booking = {
+            date,
+            time,
+            location: crecheInfo.location,
+            crecheName: creche.name,
+            price: creche.price,
+            id: crecheInfo.id,
+        };
 
-            fs.readFile(USERS_FILE, 'utf8', (err, userdata) => {
-                if (err) return res.status(500).send('Internal Server Error');
+        user.bookingHistory.push(booking);
+        user.currentBooking.push(booking);
+        await user.save();
 
-                const users = JSON.parse(userdata);
-                const user = users[userInfo.userName];
-                if (!user) return res.status(404).send('User not found');
+        res.send("ok");
 
-                const booking = {
-                    date,
-                    time,
-                    location: crecheInfo.location,
-                    crecheName,
-                    price: crecheprice,
-                    id: crecheInfo.id,
-                };
-
-                if (!user.bookingHistory) user.bookingHistory = [];
-                if (!user.currentBooking) user.currentBooking = [];
-
-                user.bookingHistory.push(booking);
-                user.currentBooking.push(booking);
-
-                fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), (err) => {
-                    if (err) return res.status(500).send('Internal Server Error');
-                    res.send("ok");
-                });
-            });
-        });
-    });
+    } catch (err) {
+        console.error('Booking error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // ─── POST /cancelbooking (protected) ─────────────────────────────
-router.post('/cancelbooking', verifyToken, (req, res) => {
+router.post('/cancelbooking', verifyToken, async (req, res) => {
     const { userName, bookingIndex } = req.body;
 
-    fs.readFile(USERS_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).send('Internal Server Error');
-
-        let users = {};
-        try { users = JSON.parse(data || '{}'); } catch { return res.status(500).send('Database file corrupted'); }
-        const user = users[userName];
+    try {
+        const user = await User.findOne({ userName });
         if (!user) return res.status(404).send('User not found');
 
         if (!user.currentBooking || bookingIndex === undefined) {
             return res.status(400).send('Invalid request');
         }
 
+        // Remove booking from currentBooking only (keep in history)
         user.currentBooking.splice(bookingIndex, 1);
+        await user.save();
 
-        fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), (err) => {
-            if (err) return res.status(500).send('Internal Server Error');
-            res.send({ status: 'cancelled' });
-        });
-    });
+        res.send({ status: 'cancelled' });
+
+    } catch (err) {
+        console.error('Cancel booking error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 module.exports = router;
